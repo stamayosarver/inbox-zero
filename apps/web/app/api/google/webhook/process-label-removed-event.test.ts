@@ -10,7 +10,7 @@ import {
   SystemType,
 } from "@/generated/prisma/enums";
 import prisma from "@/utils/prisma";
-import { findRuleByLabelId } from "@/utils/rule/sender-classification";
+import { findRuleByLabelId } from "@/utils/rule/classification-feedback";
 
 const logger = createScopedLogger("test");
 
@@ -68,7 +68,7 @@ vi.mock("@/app/api/google/webhook/fetch-sender-from-message", () => ({
   fetchSenderFromMessage: vi.fn().mockResolvedValue("sender@example.com"),
 }));
 
-vi.mock("@/utils/rule/sender-classification", () => ({
+vi.mock("@/utils/rule/classification-feedback", () => ({
   saveSenderClassification: vi.fn().mockResolvedValue(undefined),
   findRuleByLabelId: vi.fn(),
 }));
