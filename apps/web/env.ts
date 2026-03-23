@@ -220,6 +220,13 @@ export const env = createEnv({
     TEAMS_BOT_APP_TYPE: z.enum(["MultiTenant", "SingleTenant"]).optional(),
     TELEGRAM_BOT_TOKEN: z.string().optional(),
     TELEGRAM_BOT_SECRET_TOKEN: z.string().optional(),
+
+    // SMTP (Nodemailer fallback for magic link emails when Resend is not configured)
+    SMTP_HOST: z.string().optional(),
+    SMTP_PORT: z.coerce.number().optional(),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASS: z.string().optional(),
+    SMTP_FROM: z.string().optional(),
   },
   client: {
     // stripe

@@ -23,6 +23,7 @@ import MeetingBriefingEmail, {
 import ColdEmailNotification, {
   type ColdEmailNotificationProps,
 } from "../emails/cold-email-notification";
+import MagicLinkEmail, { type MagicLinkEmailProps } from "../emails/magic-link";
 
 const RESEND_NOT_CONFIGURED_MESSAGE =
   "Resend is not configured. You need to add a RESEND_API_KEY in your .env file for emails to work.";
@@ -323,6 +324,52 @@ export const sendColdEmailNotification = async ({
     throw new Error(
       `Error sending cold email notification: ${result.error.message}`,
     );
+  }
+
+  return result;
+};
+
+/**
+ * Send a magic link email for passwordless sign-in.
+ * This is an auth email, so it doesn't need unsubscribe headers.
+ */
+export const sendMagicLinkEmail = async ({
+  from,
+  to,
+  emailProps,
+}: {
+  from: string;
+  to: string;
+  emailProps: MagicLinkEmailProps;
+}) => {
+  if (!resend) {
+    console.log(RESEND_NOT_CONFIGURED_MESSAGE);
+    return;
+  }
+
+  const react = <MagicLinkEmail {...emailProps} />;
+  const text = await render(react, { plainText: true });
+
+  const result = await resend.emails.send({
+    from,
+    to,
+    subject: "Sign in to Inbox Zero",
+    react,
+    text,
+    headers: {
+      "X-Entity-Ref-ID": nanoid(),
+    },
+    tags: [
+      {
+        name: "category",
+        value: "magic-link",
+      },
+    ],
+  });
+
+  if (result.error) {
+    console.error("Error sending magic link email", result.error);
+    throw new Error(`Error sending magic link email: ${result.error.message}`);
   }
 
   return result;

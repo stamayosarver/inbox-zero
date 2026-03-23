@@ -1,8 +1,11 @@
 import { sso } from "@better-auth/sso";
 import { expo } from "@better-auth/expo";
-import { oAuthProxy } from "better-auth/plugins";
+import { oAuthProxy, magicLink } from "better-auth/plugins";
 import { createContact as createLoopsContact } from "@inboxzero/loops";
-import { createContact as createResendContact } from "@inboxzero/resend";
+import {
+  createContact as createResendContact,
+  sendMagicLinkEmail,
+} from "@inboxzero/resend";
 import type { Account, AuthContext } from "better-auth";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
@@ -14,6 +17,10 @@ import {
   isLocalAuthBypassEnabled,
   isLocalBypassUserEmail,
 } from "@/utils/auth/local-bypass-config";
+import {
+  isSmtpConfigured,
+  sendMagicLinkViaSMTP,
+} from "@/utils/auth/nodemailer-transport";
 import { trackDubSignUp } from "@/utils/dub";
 import {
   isGoogleProvider,
@@ -125,6 +132,16 @@ export const betterAuthConfig = betterAuth({
         ]
       : []),
     ...(isLocalAuthBypassEnabled() ? [localBypassAuthPlugin()] : []),
+    // Magic link (passwordless) login -- enabled when Resend or SMTP is configured
+    ...(isMagicLinkEnabled()
+      ? [
+          magicLink({
+            sendMagicLink: async ({ email, url }) => {
+              await deliverMagicLinkEmail({ email, url });
+            },
+          }),
+        ]
+      : []),
     nextCookies(), // Must be last
   ],
   session: {
@@ -713,4 +730,44 @@ async function autoJoinOrganization(emailAccountId: string) {
     organizationId,
     memberId: member.id,
   });
+}
+
+export function isMagicLinkEnabled(): boolean {
+  return !!env.RESEND_API_KEY || isSmtpConfigured();
+}
+
+async function deliverMagicLinkEmail({
+  email,
+  url,
+}: {
+  email: string;
+  url: string;
+}) {
+  const baseUrl = env.NEXT_PUBLIC_BASE_URL;
+
+  if (env.RESEND_API_KEY) {
+    const from =
+      env.SMTP_FROM ||
+      env.RESEND_FROM_EMAIL ||
+      "Inbox Zero <noreply@example.com>";
+    await sendMagicLinkEmail({
+      from,
+      to: email,
+      emailProps: { url, baseUrl },
+    });
+    return;
+  }
+
+  if (isSmtpConfigured()) {
+    const from =
+      env.SMTP_FROM ||
+      env.RESEND_FROM_EMAIL ||
+      "Inbox Zero <noreply@example.com>";
+    await sendMagicLinkViaSMTP({ to: email, url, from, baseUrl });
+    return;
+  }
+
+  throw new Error(
+    "Magic link email cannot be sent: neither Resend nor SMTP is configured.",
+  );
 }
