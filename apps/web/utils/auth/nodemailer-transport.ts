@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { render } from "@react-email/render";
+import type { ReactElement } from "react";
 import MagicLinkEmail from "../../../../packages/resend/emails/magic-link";
 import { createScopedLogger } from "@/utils/logger";
 
@@ -43,7 +44,7 @@ export async function sendMagicLinkViaSMTP({
     );
   }
 
-  const react = MagicLinkEmail({ url, baseUrl });
+  const react = MagicLinkEmail({ url, baseUrl }) as ReactElement;
   const html = await render(react);
   const text = await render(react, { plainText: true });
 
