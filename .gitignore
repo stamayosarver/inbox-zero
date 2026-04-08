@@ -109,3 +109,14 @@ qa/browser-flows/results/*
 # eval reports
 eval-results/
 
+# Playwright MCP artifacts (browser automation logs/snapshots)
+.playwright-mcp/
+
+# Dev server logs
+*dev-server.log
+
+# Screenshots (don't commit to repo root)
+/*.png
+/*.jpg
+/*.jpeg
+
